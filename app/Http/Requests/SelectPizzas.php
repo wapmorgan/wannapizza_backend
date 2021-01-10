@@ -27,6 +27,7 @@ class SelectPizzas extends FormRequest
     {
         return [
             'persons' => ['required', 'numeric', Rule::in(range(1, 10))],
+            'price_below' => ['numeric', Rule::in(range(1, 10))],
             'tastes' => ['array', Rule::in(array_keys(Menu::$tastes))],
             'pizzas' => ['array', Rule::in(array_keys(Menu::$pizzas))],
         ];

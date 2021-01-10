@@ -37,7 +37,8 @@ class AnalyzeDoDo extends Command
      */
     public function handle()
     {
-        $file = __DIR__.'/../../../storage/app/dodo.json';
+        $city = 'moscow';
+        $file = __DIR__.'/../../../storage/app/dodo.'.$city.'.json';
         $data = json_decode(file_get_contents($file));
         $data = $data->menu;
 
@@ -52,7 +53,8 @@ class AnalyzeDoDo extends Command
                 if ($product->dough == 2) {
                     continue;
                 }
-                echo '- '.($product->dough == 1 ? 'обычное' : 'тонкое').', '.$product->size->name.', '.$product->menuProduct->price->value.'Р'.PHP_EOL;
+//                var_dump($product->size);
+                echo '- '.($product->dough == 1 ? 'обычное' : 'тонкое').', '.$product->size->clientAlias.', '.$product->menuProduct->price->value.'Р'.PHP_EOL;
                 if ($ingredients === null) $ingredients = $menu_product->ingredients;
             }
 
