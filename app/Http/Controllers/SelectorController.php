@@ -1,7 +1,7 @@
 <?php
-
 namespace App\Http\Controllers;
 
+use App\Models\DoDoPizzeria;
 use Illuminate\Http\Request;
 
 class SelectorController extends Controller
@@ -14,6 +14,7 @@ class SelectorController extends Controller
         return [
             'persons' => range(1, 10),
             'tastes' => \App\Models\Menu::$tastes,
+            'meat' => \App\Models\Menu::$meat,
             'pizzas' => \App\Models\Menu::$pizzas,
         ];
     }
@@ -24,6 +25,12 @@ class SelectorController extends Controller
      */
     public function select(\App\Http\Requests\SelectPizzas $request) {
         $validated = $request->validated();
-        return [$validated];
+
+        $do_do = new DoDoPizzeria();
+        $pizzas = $do_do->select(
+            'moscow', $validated['persons'],
+            $validated['tastes'] ?? null, $validated['meat'] ?? null);
+
+        return $pizzas;
     }
 }
