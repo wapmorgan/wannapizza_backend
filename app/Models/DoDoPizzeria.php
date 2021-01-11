@@ -76,13 +76,13 @@ class DoDoPizzeria
                 $last_image = last($pizza_product->menuProduct->product->productImages);
 
                 $result[] = [
-                    'dodo',
-                    'dodo:'.$pizza_product->menuProduct->product->uuId,
-                    $pizza->name,
-                    $pizza_product->size->clientAlias,
-                    $product_tastes,
-                    $pizza_product->menuProduct->price->value,
-                    $last_image->url,
+                    'pizzeria' => 'dodo',
+                    'id' => $pizza_product->menuProduct->product->uuId,
+                    'name' => $pizza->name,
+                    'size' => self::$sizesInCm[$pizza_product->sizeGroup],
+                    'tastes' => $product_tastes,
+                    'price' => $pizza_product->menuProduct->price->value,
+                    'thumbnail' => $last_image->url,
                 ];
             }
         }
