@@ -5,7 +5,8 @@ use stdClass;
 
 class DoDoPizzeria
 {
-    const STANDARD_DOUGH = 1;
+    public const PIZZERIA = 'dodo';
+
     public static array $sizesInCm = [
         1 => 25,
         2 => 30,
@@ -25,13 +26,15 @@ class DoDoPizzeria
         10 => [3],
     ];
 
-    public static array $tastesMarkers = [
-        Menu::CHEESE_TASTE => ['пармезана', 'пармезан', 'чеддера', 'чеддер', 'моцареллы', 'моцарелла', 'брынзы', 'брынза'],
-        Menu::SAUSAGE_TASTE => ['пепперони'],
-        Menu::SPICY_TASTE => ['острый'],
-        Menu::EXOTIC_TASTE => ['яблоки', 'смородина', 'пломбир', 'корица', 'ананасы', 'брусника', 'молоко', 'сгущенное'],
-    ];
+    protected const STANDARD_DOUGH = 1;
 
+    /**
+     * @param string $city
+     * @param int $persons
+     * @param array|null $tastes
+     * @param array|null $meat
+     * @return array
+     */
     public function select(string $city, int $persons, ?array $tastes, ?array $meat)
     {
         $menu = $this->getMenu($city);
@@ -57,6 +60,16 @@ class DoDoPizzeria
 
         $matched_sizes = self::$matchingSizesByPersons[$persons];
 
+        if ($tastes !== null) {
+            $allowed_tastes = array_keys($tastes, true);
+            $disallowed_tastes = array_keys($tastes, false);
+        }
+
+        if ($meat !== null) {
+            $allowed_meat = array_keys($meat, true);
+            $disallowed_meat = array_keys($meat, false);
+        }
+
         foreach ($pizzas as $pizza) {
             // Проверяем все размеры пиццы
             foreach ($pizza->products as $pizza_product) {
@@ -66,12 +79,27 @@ class DoDoPizzeria
                 // Проверяем размер пиццы
                 if (!in_array($pizza_product->sizeGroup, $matched_sizes)) continue;
 
-//                if (!isset($pizza_product->ingredients)) var_dump($pizza_product);
-                $product_tastes = $this->getTastesByIngredients($pizza_product->menuProduct->product->ingredients);
 //                // Проверяем вкусы выбранные
 //                if ($tastes !== null) {
 //
 //                }
+
+                $pizza_ingredients = array_map(static function ($ingredient) {return mb_strtolower($ingredient->name);},
+                    $pizza_product->menuProduct->product->ingredients);
+
+                $pizza_ingredient_words = explode(' ', implode(' ', $pizza_ingredients));
+
+                // Проверяем состав пиццы
+                $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
+                $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
+
+//                var_dump(array_intersect($pizza_tastes, $allowed_tastes));
+                if (isset($allowed_tastes)
+                    && count(array_intersect($pizza_tastes, $allowed_tastes)) !== count($allowed_tastes)) continue;
+                if (isset($disallowed_tastes) && !empty(array_intersect($pizza_tastes, $disallowed_tastes))) continue;
+
+                if (isset($allowed_meat) && !empty(array_diff($pizza_meat, $allowed_meat))) continue;
+                if (isset($disallowed_meat) && !empty(array_intersect($pizza_meat, $disallowed_meat))) continue;
 
                 $last_image = last($pizza_product->menuProduct->product->productImages);
 
@@ -80,9 +108,11 @@ class DoDoPizzeria
                     'id' => $pizza_product->menuProduct->product->uuId,
                     'name' => $pizza->name,
                     'size' => self::$sizesInCm[$pizza_product->sizeGroup],
-                    'tastes' => $product_tastes,
+                    'tastes' => $pizza_tastes,
+                    'meat' => $pizza_meat,
                     'price' => $pizza_product->menuProduct->price->value,
                     'thumbnail' => $last_image->url,
+                    'ingredients' => $pizza_ingredients,
                 ];
             }
         }
@@ -99,7 +129,7 @@ class DoDoPizzeria
         );
 
         $tastes = [];
-        foreach (self::$tastesMarkers as $taste => $tasteMarkers) {
+        foreach (Menu::$tastesMarkers as $taste => $tasteMarkers) {
             foreach ($tasteMarkers as $tasteMarker) {
                 if (in_array($tasteMarker, $ingredients)) {
                     $tastes[] = $taste;

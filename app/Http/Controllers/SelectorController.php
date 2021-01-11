@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DoDoPizzeria;
+use App\Models\Selector;
 use Illuminate\Http\Request;
 
 class SelectorController extends Controller
@@ -26,8 +27,8 @@ class SelectorController extends Controller
     public function select(\App\Http\Requests\SelectPizzas $request) {
         $validated = $request->validated();
 
-        $do_do = new DoDoPizzeria();
-        $pizzas = $do_do->select(
+        $selector = new Selector();
+        $pizzas = $selector->select(
             'moscow', $validated['persons'],
             $validated['tastes'] ?? null, $validated['meat'] ?? null);
 

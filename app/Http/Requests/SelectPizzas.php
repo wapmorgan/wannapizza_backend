@@ -25,12 +25,21 @@ class SelectPizzas extends FormRequest
      */
     public function rules()
     {
-        return [
+        $tastes = array_combine(
+            array_map(static function ($taste) {return 'tastes.'.$taste;}, array_keys(Menu::$tastes)),
+            array_fill(0, count(Menu::$tastes), ['boolean'])
+        );
+
+
+        $meat = array_combine(
+            array_map(static function ($meat) {return 'meat.'.$meat;}, array_keys(Menu::$meat)),
+            array_fill(0, count(Menu::$meat), ['boolean'])
+        );
+
+        return array_merge([
             'persons' => ['required', 'numeric', Rule::in(range(1, 10))],
             'price_below' => ['numeric', Rule::in(range(1, 10))],
-            'tastes' => ['array', Rule::in(array_keys(Menu::$tastes))],
-            'meat' => ['array', Rule::in(array_keys(Menu::$meat))],
             'pizzas' => ['array', Rule::in(array_keys(Menu::$pizzas))],
-        ];
+        ], $tastes, $meat);
     }
 }
