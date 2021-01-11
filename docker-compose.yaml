@@ -3,8 +3,7 @@ services:
   back:
     build:
       context: .
-      dockerfile: php/Dockerfile
-    container_name: back
+      dockerfile: docker/php/Dockerfile
     restart: unless-stopped
     tty: true
     environment:
@@ -12,12 +11,18 @@ services:
       SERVICE_TAGS: dev
     working_dir: /var/www
     volumes:
-      - ./:/var/www
+      - back_data:/var/www/storage/app/
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+
+  crawler:
+    build: docker/crawler
+    volumes:
+      - back_data:/var/crawler/data/
+    environment:
+      CRAWLER_DATA_DIR: "/var/crawler/data/"
 
   webserver:
     image: nginx:alpine
-    container_name: webserver
     restart: unless-stopped
     tty: true
     depends_on:
@@ -27,4 +32,7 @@ services:
       - "443:443"
     volumes:
       - ./:/var/www
-      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+
+volumes:
+  back_data:

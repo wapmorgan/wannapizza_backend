@@ -50,6 +50,12 @@ class DoDoPizzeria
     protected function getMenu(string $city)
     {
         $file = __DIR__.'/../../storage/app/dodo.'.$city.'.json';
+        if (!file_exists($file)) {
+            return (object)[
+                'pizzas' => [],
+            ];
+        }
+
         $data = json_decode(file_get_contents($file));
         return $data->menu;
     }
@@ -118,25 +124,5 @@ class DoDoPizzeria
         }
 
         return $result;
-    }
-
-    public function getTastesByIngredients(array $ingredients)
-    {
-        $ingredients = explode(' ',
-            implode(' ',
-                array_map(static function ($ingredient) {return mb_strtolower($ingredient->name);}, $ingredients)
-            )
-        );
-
-        $tastes = [];
-        foreach (Menu::$tastesMarkers as $taste => $tasteMarkers) {
-            foreach ($tasteMarkers as $tasteMarker) {
-                if (in_array($tasteMarker, $ingredients)) {
-                    $tastes[] = $taste;
-                    continue(2);
-                }
-            }
-        }
-        return $tastes;
     }
 }

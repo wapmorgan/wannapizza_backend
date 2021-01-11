@@ -1,0 +1,7 @@
+version: '3'
+services:
+  back:
+    volumes:
+      - back_data:/var/www/storage/app/
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini

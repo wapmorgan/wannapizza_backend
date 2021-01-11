@@ -50,6 +50,10 @@ class DominosPizzeria
     protected function getMenu(string $city)
     {
         $file = __DIR__.'/../../storage/app/dominos.'.$city.'.json';
+        if (!file_exists($file)) {
+            return [];
+        }
+
         $data = json_decode(file_get_contents($file));
         return $data->pizza->list;
     }
