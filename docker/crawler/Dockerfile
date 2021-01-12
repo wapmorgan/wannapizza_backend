@@ -14,5 +14,7 @@ RUN crontab /etc/cron.d/crawl-pizzerias
 COPY crawl-dodo.php /var/crawler/
 COPY crawl-dominos.php /var/crawler/
 
+WORKDIR /var/crawler
+
 # Run the command on container startup
 CMD ["cron", "-f"]
