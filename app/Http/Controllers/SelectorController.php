@@ -45,7 +45,7 @@ class SelectorController extends Controller
                 return redirect()->away('https://dodopizza.ru/moscow?product='.$pizza_id.'#pizzas');
 
             case 'dominos':
-                break;
+                return redirect()->away('https://dominospizza.ru/category/picca');
         }
     }
 }

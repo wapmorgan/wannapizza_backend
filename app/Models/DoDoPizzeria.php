@@ -94,7 +94,7 @@ class DoDoPizzeria extends Pizzeria
 
                 $pizza_price = $pizza_product->menuProduct->price->value;
 
-                if ($maxPrice !== null && $maxPrice > $pizza_price)
+                if ($maxPrice !== null && $pizza_price > $maxPrice)
                     continue;
 
                 $pizza_ingredients = array_map(static function ($ingredient) {return mb_strtolower($ingredient->name);},
@@ -115,12 +115,14 @@ class DoDoPizzeria extends Pizzeria
                     $vegetarianOnly))
                     continue;
 
+                // Подборка картинки с размером примерно 300x300
                 foreach ($pizza_product->menuProduct->product->productImages as $productImage) {
                     if ($productImage->size == 4) {
                         $product_image = $productImage;
                         break;
                     }
                 }
+                // Если не найдена, берём последнюю
                 if (!isset($product_image))
                     $product_image = last($pizza_product->menuProduct->product->productImages);
 

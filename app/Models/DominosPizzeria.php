@@ -122,7 +122,7 @@ class DominosPizzeria extends Pizzeria
 
                     $pizza_price = $first_side->productPrice;
 
-                    if ($maxPrice !== null && $maxPrice > $pizza_price)
+                    if ($maxPrice !== null && $pizza_price > $maxPrice)
                         continue;
 
                     $pizza_diameter = self::$sizesInCm[$pizza_size->sizeCode];
