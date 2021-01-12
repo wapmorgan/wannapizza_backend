@@ -26,12 +26,26 @@ class SelectorController extends Controller
      */
     public function select(\App\Http\Requests\SelectPizzas $request) {
         $validated = $request->validated();
+//        return $validated;
 
         $selector = new Selector();
         $pizzas = $selector->select(
             'moscow', $validated['persons'],
-            $validated['tastes'] ?? null, $validated['meat'] ?? null);
+            $validated['tastes'] ?? null, $validated['meat'] ?? null,
+            $validated['vegetarian'] ?? false, $validated['maxPrice'] ?? null);
 
         return $pizzas;
+    }
+
+    public function goTo(Request $request)
+    {
+        $pizza_id = $request->query->get('pizzaId');
+        switch ($request->query->get('pizzeria')) {
+            case 'dodo':
+                return redirect()->away('https://dodopizza.ru/moscow?product='.$pizza_id.'#pizzas');
+
+            case 'dominos':
+                break;
+        }
     }
 }

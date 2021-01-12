@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 
-class DominosPizzeria
+class DominosPizzeria extends Pizzeria
 {
     public const PIZZERIA = 'dominos';
 
@@ -31,13 +31,22 @@ class DominosPizzeria
      * @param int $persons
      * @param array|null $tastes
      * @param array|null $meat
+     * @param bool|null $vegetarianOnly
+     * @param int|null $maxPrice
      * @return array
      */
-    public function select(string $city, int $persons, ?array $tastes, ?array $meat)
+    public function select(
+        string $city,
+        int $persons,
+        ?array $tastes,
+        ?array $meat,
+        ?bool $vegetarianOnly,
+        ?int $maxPrice
+    )
     {
         $menu = $this->getMenu($city);
 
-        $pizzas = $this->findPizzas($menu, $persons, $tastes, $meat);
+        $pizzas = $this->findPizzas($menu, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
 //        $combos = $this->findCombos($menu, $persons, $tastes, $meat);
 
         return $pizzas;
@@ -58,7 +67,14 @@ class DominosPizzeria
         return $data->pizza->list;
     }
 
-    protected function findPizzas($menu, int $persons, ?array $tastes, ?array $meat)
+    protected function findPizzas(
+        $menu,
+        int $persons,
+        ?array $tastes,
+        ?array $meat,
+        ?bool $vegetarianOnly,
+        ?int $maxPrice
+    )
     {
         $pizzas = [];
         $matched_sizes = self::$matchingSizesByPersons[$persons];
@@ -85,12 +101,12 @@ class DominosPizzeria
             $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
             $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
 
-            if (isset($allowed_tastes)
-                && count(array_intersect($pizza_tastes, $allowed_tastes)) !== count($allowed_tastes)) continue;
-            if (isset($disallowed_tastes) && !empty(array_intersect($pizza_tastes, $disallowed_tastes))) continue;
-
-            if (isset($allowed_meat) && !empty(array_diff($pizza_meat, $allowed_meat))) continue;
-            if (isset($disallowed_meat) && !empty(array_intersect($pizza_meat, $disallowed_meat))) continue;
+            if (!$this->passesFilters(
+                $pizza_tastes, $pizza_meat,
+                $allowed_tastes ?? null, $disallowed_tastes ?? null,
+                $allowed_meat ?? null, $disallowed_meat ?? null,
+                $vegetarianOnly))
+                continue;
 
             foreach ($pizza->sizes as $pizza_size)
             {
@@ -104,16 +120,24 @@ class DominosPizzeria
 
                     $first_side = current($pizza_size_dough->sides);
 
+                    $pizza_price = $first_side->productPrice;
+
+                    if ($maxPrice !== null && $maxPrice > $pizza_price)
+                        continue;
+
+                    $pizza_diameter = self::$sizesInCm[$pizza_size->sizeCode];
+
                     $pizzas[] = [
                         'pizzeria' => self::PIZZERIA,
                         'id' => $pizza->id,
                         'name' => $pizza->description,
-                        'size' => self::$sizesInCm[$pizza_size->sizeCode],
+                        'size' => $pizza_diameter,
                         'tastes' => $pizza_tastes,
                         'meat' => $pizza_meat,
-                        'price' => $first_side->productPrice,
+                        'price' => $pizza_price,
+                        'cmPrice' => $pizza_price / (M_PI * ($pizza_diameter / 2)^2),
                         // На удивление, у них динамическая ссылка опреедляет создаваемое изображение. Можно поставить свои размеры
-                        'thumbnail' => 'https://dpr-cdn.azureedge.net/api/medium/ProductOsg/Global/'.$pizza->productOsgCode.'/NULL/200x200/RU',
+                        'thumbnail' => 'https://dpr-cdn.azureedge.net/api/medium/ProductOsg/Global/'.$pizza->productOsgCode.'/NULL/300x300/RU',
                         'ingredients' => $pizza_ingredients,
                     ];
 

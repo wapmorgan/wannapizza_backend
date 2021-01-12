@@ -1,2 +1,2 @@
-41 * * * * /usr/local/bin/php /var/crawler/crawl-dodo.php > /proc/1/fd/1 2>/proc/1/fd/2
+41 */6 * * * /usr/local/bin/php /var/crawler/crawl-dodo.php > /proc/1/fd/1 2>/proc/1/fd/2
 41 * * * * /usr/local/bin/php /var/crawler/crawl-dominos.php > /proc/1/fd/1 2>/proc/1/fd/2

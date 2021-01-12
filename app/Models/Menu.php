@@ -6,7 +6,7 @@ class Menu
     public const CHEESE_TASTE = 'cheese';
     public const SAUSAGE_TASTE = 'sausage';
     public const SPICY_TASTE = 'spicy';
-    public const VEGETARIAN_TASTE = 'vegetarian';
+//    public const VEGETARIAN_TASTE = 'vegetarian';
     public const MUSHROOM_TASTE = 'mushroom';
     public const EXOTIC_TASTE = 'exotic';
 
@@ -20,7 +20,7 @@ class Menu
         self::CHEESE_TASTE => 'Сырная',
         self::SAUSAGE_TASTE => 'Колбасная',
         self::SPICY_TASTE => 'Острая',
-        self::VEGETARIAN_TASTE => 'Вегетарианская',
+//        self::VEGETARIAN_TASTE => 'Вегетарианская',
         self::MUSHROOM_TASTE => 'Грибная',
         self::EXOTIC_TASTE => 'Экзотическая',
     ];
@@ -31,6 +31,10 @@ class Menu
         self::BEEF_MEAT => 'Говядина',
         self::FISH_MEAT => 'Рыба',
         self::SAUCE_MEAT => 'Мясной соус',
+    ];
+
+    public static array $meatTastes = [
+        self::SAUSAGE_TASTE,
     ];
 
     public static array $pizzas = [
@@ -90,5 +94,14 @@ class Menu
             }
         }
         return $meat_kinds;
+    }
+
+    /**
+     * @param array $tastes
+     * @return bool
+     */
+    public static function isVegetarianByTastes(array $tastes): bool
+    {
+        return empty(array_intersect($tastes, static::$meatTastes));
     }
 }

@@ -1,6 +1,9 @@
 <?php
 
 $cities = [
+    'moscow' => 'Москва',
+    'peterburg' => 'Санкт-Петербург',
+
     'abakan' => 'Абакан',
     'abinsk' => 'Абинск',
     'adler' => 'Адлер',
@@ -148,7 +151,6 @@ $cities = [
     'mikhaylovsk' => 'Михайловск',
     'mozhaysk' => 'Можайск',
     'monino' => 'Монино',
-    'moscow' => 'Москва',
     'moskovsky' => 'Московский',
     'muravlenko' => 'Муравленко',
     'murino' => 'Мурино',
@@ -214,7 +216,6 @@ $cities = [
     'salavat' => 'Салават',
     'salehard' => 'Салехард',
     'samara' => 'Самара',
-    'peterburg' => 'Санкт-Петербург',
     'saransk' => 'Саранск',
     'sarapul' => 'Сарапул',
     'saratov' => 'Саратов',

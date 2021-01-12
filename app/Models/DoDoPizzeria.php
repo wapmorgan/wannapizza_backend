@@ -1,9 +1,7 @@
 <?php
 namespace App\Models;
 
-use stdClass;
-
-class DoDoPizzeria
+class DoDoPizzeria extends Pizzeria
 {
     public const PIZZERIA = 'dodo';
 
@@ -33,12 +31,14 @@ class DoDoPizzeria
      * @param int $persons
      * @param array|null $tastes
      * @param array|null $meat
+     * @param bool|null $vegetarianOnly
+     * @param int|null $maxPrice
      * @return array
      */
-    public function select(string $city, int $persons, ?array $tastes, ?array $meat)
+    public function select(string $city, int $persons, ?array $tastes, ?array $meat, ?bool $vegetarianOnly, ?int $maxPrice)
     {
         $menu = $this->getMenu($city);
-        $pizzas = $this->findPizzas($menu->pizzas, $persons, $tastes, $meat);
+        $pizzas = $this->findPizzas($menu->pizzas, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
 //        $combos = $this->findCombos($persons, $tastes, $meat);
         return $pizzas;
     }
@@ -60,7 +60,14 @@ class DoDoPizzeria
         return $data->menu;
     }
 
-    protected function findPizzas(array $pizzas, int $persons, ?array $tastes, ?array $meat)
+    protected function findPizzas(
+        array $pizzas,
+        int $persons,
+        ?array $tastes,
+        ?array $meat,
+        ?bool $vegetarianOnly,
+        ?int $maxPrice
+    )
     {
         $result = [];
 
@@ -85,10 +92,10 @@ class DoDoPizzeria
                 // Проверяем размер пиццы
                 if (!in_array($pizza_product->sizeGroup, $matched_sizes)) continue;
 
-//                // Проверяем вкусы выбранные
-//                if ($tastes !== null) {
-//
-//                }
+                $pizza_price = $pizza_product->menuProduct->price->value;
+
+                if ($maxPrice !== null && $maxPrice > $pizza_price)
+                    continue;
 
                 $pizza_ingredients = array_map(static function ($ingredient) {return mb_strtolower($ingredient->name);},
                     $pizza_product->menuProduct->product->ingredients);
@@ -99,27 +106,40 @@ class DoDoPizzeria
                 $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
                 $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
 
-//                var_dump(array_intersect($pizza_tastes, $allowed_tastes));
-                if (isset($allowed_tastes)
-                    && count(array_intersect($pizza_tastes, $allowed_tastes)) !== count($allowed_tastes)) continue;
-                if (isset($disallowed_tastes) && !empty(array_intersect($pizza_tastes, $disallowed_tastes))) continue;
+//                var_dump($vegetarianOnly, $pizza_tastes);
 
-                if (isset($allowed_meat) && !empty(array_diff($pizza_meat, $allowed_meat))) continue;
-                if (isset($disallowed_meat) && !empty(array_intersect($pizza_meat, $disallowed_meat))) continue;
+                if (!$this->passesFilters(
+                    $pizza_tastes, $pizza_meat,
+                    $allowed_tastes ?? null, $disallowed_tastes ?? null,
+                    $allowed_meat ?? null, $disallowed_meat ?? null,
+                    $vegetarianOnly))
+                    continue;
 
-                $last_image = last($pizza_product->menuProduct->product->productImages);
+                foreach ($pizza_product->menuProduct->product->productImages as $productImage) {
+                    if ($productImage->size == 4) {
+                        $product_image = $productImage;
+                        break;
+                    }
+                }
+                if (!isset($product_image))
+                    $product_image = last($pizza_product->menuProduct->product->productImages);
+
+                $pizza_diameter = self::$sizesInCm[$pizza_product->sizeGroup];
 
                 $result[] = [
                     'pizzeria' => 'dodo',
-                    'id' => $pizza_product->menuProduct->product->uuId,
+                    'id' => $pizza->uuId, // $pizza_product->menuProduct->product->uuId,
                     'name' => $pizza->name,
-                    'size' => self::$sizesInCm[$pizza_product->sizeGroup],
+                    'size' => $pizza_diameter,
                     'tastes' => $pizza_tastes,
                     'meat' => $pizza_meat,
-                    'price' => $pizza_product->menuProduct->price->value,
-                    'thumbnail' => $last_image->url,
+                    'price' => $pizza_price,
+                    'cmPrice' => $pizza_price / (M_PI * ($pizza_diameter / 2)^2),
+                    'thumbnail' => $product_image->url,
                     'ingredients' => $pizza_ingredients,
                 ];
+
+                unset($product_image);
             }
         }
 
