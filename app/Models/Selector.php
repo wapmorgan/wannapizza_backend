@@ -53,10 +53,11 @@ class Selector
     {
         $pizzerias = [];
 
-        foreach (static::$allPizzerias as $pizzeria)
+        foreach (static::$allPizzerias as $pizzeriaClass)
         {
-            if (isset($pizzeria::$cities[$city]))
-                $pizzerias[] = $pizzeria;
+            $pizzeria_cities = $pizzeriaClass::getUnifiedCities();
+            if (isset($pizzeria_cities[$city]))
+                $pizzerias[] = $pizzeriaClass;
         }
 
         return $pizzerias;

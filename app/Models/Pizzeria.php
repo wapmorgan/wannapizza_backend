@@ -65,4 +65,12 @@ abstract class Pizzeria
         }
         return $cities;
     }
+
+    protected function getOriginalCity(string $city)
+    {
+        if (($key = array_search($city, static::$citiesUnifications)) !== false) {
+            $city = $key;
+        }
+        return $city;
+    }
 }

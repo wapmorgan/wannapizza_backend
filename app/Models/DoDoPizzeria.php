@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use http\Env\Request;
 use Illuminate\Support\Facades\Log;
 use JsonException;
 
@@ -27,7 +28,7 @@ class DoDoPizzeria extends Pizzeria
         10 => [3],
     ];
 
-        public static array $cities = [
+    public static array $cities = [
         'moscow' => 'Москва',
         'peterburg' => 'Санкт-Петербург',
 
@@ -323,6 +324,11 @@ class DoDoPizzeria extends Pizzeria
 
     public static array $citiesUnifications = [
         'peterburg' => 'spb',
+        'moskovsky' => 'moskovskiy',
+        'mytishi' => 'mytishchi',
+        'nizhnynovgorod' => 'nn',
+        'khimki' => 'himki',
+        'shelkovo' => 'schelkovo',
     ];
 
     protected const STANDARD_DOUGH = 1;
@@ -338,9 +344,12 @@ class DoDoPizzeria extends Pizzeria
      */
     public function select(string $city, int $persons, ?array $tastes, ?array $meat, ?bool $vegetarianOnly, ?int $maxPrice)
     {
-        $menu = $this->getMenu($city);
+        $original_city = $this->getOriginalCity($city);
+        $menu = $this->getMenu($original_city);
+
         $pizzas = $this->findPizzas($menu->pizzas, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
-//        $combos = $this->findCombos($persons, $tastes, $meat);
+        $combos = $this->findCombos($menu->combos, $pizzas, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
+//        var_dump($combos);
         return $pizzas;
     }
 
@@ -354,6 +363,7 @@ class DoDoPizzeria extends Pizzeria
         if (!file_exists($file)) {
             return (object)[
                 'pizzas' => [],
+                'combos' => [],
             ];
         }
 
@@ -363,6 +373,7 @@ class DoDoPizzeria extends Pizzeria
             Log::error($e->getMessage());
             return (object)[
                 'pizzas' => [],
+                'combos' => [],
             ];
         }
         return $data->menu;
@@ -422,9 +433,6 @@ class DoDoPizzeria extends Pizzeria
                 // Проверяем состав пиццы
                 $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
                 $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
-
-
-//var_dump($pizza);
                 if (!$this->passesFilters(
                     $pizza_tastes, $pizza_meat,
                     $allowed_tastes ?? null, $disallowed_tastes ?? null,
@@ -447,7 +455,8 @@ class DoDoPizzeria extends Pizzeria
 
                 $result[] = [
                     'pizzeria' => 'dodo',
-                    'id' => $pizza->uuId, // $pizza_product->menuProduct->product->uuId,
+                    'id' => $pizza->uuId,
+                    'sizeId' => $pizza_product->menuProduct->product->uuId,
                     'name' => $pizza->name,
                     'size' => $pizza_diameter,
                     'tastes' => $pizza_tastes,
@@ -463,5 +472,30 @@ class DoDoPizzeria extends Pizzeria
         }
 
         return $result;
+    }
+
+    protected function findCombos(
+        array $combos,
+        array $pizzas,
+        int $persons,
+        ?array $tastes,
+        ?array $meat,
+        ?bool $vegetarianOnly,
+        ?int $maxPrice)
+    {
+        $result = [];
+        $needed_for_1_person = 300;
+
+        // подготовим данные по пиццам
+        foreach ($pizzas as $i => $pizza) {
+            unset($pizzas[$i]);
+            $pizzas[$pizza['sizeId']] = $pizza;
+        }
+
+        // Проверяем совпадение комб
+        foreach ($combos as $combo) {
+
+        }
+//        print_r($pizzas);exit;
     }
 }

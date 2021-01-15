@@ -78,6 +78,15 @@ class DominosPizzeria extends Pizzeria
         'scherbinka' => 'Щербинка',
     ];
 
+    public static array $citiesUnifications = [
+        'dolgoprudny' => 'dolgoprudniy',
+        'zheleznodorozhny' => 'zheldor',
+        'naro-fominsk' => 'narofominsk',
+        'odincovo' => 'odintsovo',
+        'rostov-na-donu' => 'rostovnadonu',
+        'sergiev-posad' => 'sergievposad',
+    ];
+
     protected const STANDARD_DOUGH = 'CLASSIC';
 
     /**
@@ -98,7 +107,9 @@ class DominosPizzeria extends Pizzeria
         ?int $maxPrice
     )
     {
-        $menu = $this->getMenu($city);
+
+        $original_city = $this->getOriginalCity($city);
+        $menu = $this->getMenu($original_city);
 
         $pizzas = $this->findPizzas($menu, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
 //        $combos = $this->findCombos($menu, $persons, $tastes, $meat);
