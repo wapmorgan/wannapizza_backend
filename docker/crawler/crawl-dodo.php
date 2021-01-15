@@ -307,7 +307,7 @@ function downloadMenu($city)
     $json_string = str_replace('\u0022', '"', $match[1][0]);
     $size = strlen($json_string);
     //$file = getenv('CRAWLER_DATA_DIR').'/dodo.'.$city.'.json';
-    $file = '/var/crawler/data/dodo.' . $city . '.json';
+    $file = __DIR__.'/data/dodo.' . $city . '.json';
 
     echo 'Saving ' . $size . ' byte(s) to ' . $file . ' ...';
     $written = file_put_contents($file, $json_string);

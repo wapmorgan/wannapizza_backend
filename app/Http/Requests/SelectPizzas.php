@@ -37,6 +37,7 @@ class SelectPizzas extends FormRequest
         );
 
         return array_merge([
+            'city' => ['required', 'string'],
             'persons' => ['required', 'numeric', Rule::in(range(1, 10))],
             'vegetarian' => ['boolean'],
             'maxPrice' => ['numeric'],

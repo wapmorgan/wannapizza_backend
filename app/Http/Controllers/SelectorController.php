@@ -30,7 +30,7 @@ class SelectorController extends Controller
 
         $selector = new Selector();
         $pizzas = $selector->select(
-            'moscow', $validated['persons'],
+            $validated['city'], $validated['persons'],
             $validated['tastes'] ?? null, $validated['meat'] ?? null,
             $validated['vegetarian'] ?? false, $validated['maxPrice'] ?? null);
 

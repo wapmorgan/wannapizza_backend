@@ -3,6 +3,9 @@ namespace App\Models;
 
 abstract class Pizzeria
 {
+    public static array $cities = [];
+    public static array $citiesUnifications = [];
+
     abstract public function select(
         string $city,
         int $persons,
@@ -49,5 +52,17 @@ abstract class Pizzeria
             return false;
 
         return true;
+    }
+
+    public static function getUnifiedCities()
+    {
+        $cities = static::$cities;
+        foreach (static::$citiesUnifications as $citySource => $cityDestination) {
+            if (isset($cities[$citySource])) {
+                $cities[$cityDestination] = $cities[$citySource];
+                unset($cities[$citySource]);
+            }
+        }
+        return $cities;
     }
 }
