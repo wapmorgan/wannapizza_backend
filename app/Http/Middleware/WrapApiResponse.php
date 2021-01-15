@@ -1,9 +1,8 @@
 <?php
-
 namespace App\Http\Middleware;
 
-
 use Closure;
+use Illuminate\Http\Request;
 
 class WrapApiResponse
 {
@@ -15,7 +14,7 @@ class WrapApiResponse
      *
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
         // Get the response
         $response = $next($request);
@@ -23,10 +22,12 @@ class WrapApiResponse
         // Calculate execution time
         $executionTime = microtime(true) - LARAVEL_START;
 
+        $content = $response->getContent();
+
         // I assume you're using valid json in your responses
         // Then I manipulate them below
         $content = [
-            'data' => json_decode($response->getContent(), true),
+            'data' => $content === null ? null : json_decode($content, true),
             'executionTime' => $executionTime,
         ];
 

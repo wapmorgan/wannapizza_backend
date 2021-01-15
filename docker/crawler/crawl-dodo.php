@@ -304,7 +304,7 @@ function downloadMenu($city)
     echo ' got in ' . round(microtime(true) - $time, 3) . PHP_EOL;
 
     preg_match_all('~JSON\.parse\("(.*)"\)\;window~us', $content, $match);
-    $json_string = str_replace('\u0022', '"', $match[1][0]);
+    $json_string = str_replace(['\u0022', '\\\\"'], ['"', '\\"'], $match[1][0]);
     $size = strlen($json_string);
     //$file = getenv('CRAWLER_DATA_DIR').'/dodo.'.$city.'.json';
     $file = __DIR__.'/data/dodo.' . $city . '.json';

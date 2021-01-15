@@ -58,6 +58,7 @@ class Selector
             if (isset($pizzeria::$cities[$city]))
                 $pizzerias[] = $pizzeria;
         }
+
         return $pizzerias;
     }
 

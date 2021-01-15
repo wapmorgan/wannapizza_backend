@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\DoDoPizzeria;
 use App\Models\Selector;
 use Illuminate\Http\Request;
 
@@ -40,9 +39,11 @@ class SelectorController extends Controller
     public function goTo(Request $request)
     {
         $pizza_id = $request->query->get('pizzaId');
+        $city = $request->query->get('city');
+
         switch ($request->query->get('pizzeria')) {
             case 'dodo':
-                return redirect()->away('https://dodopizza.ru/moscow?product='.$pizza_id.'#pizzas');
+                return redirect()->away('https://dodopizza.ru/'.$city.'?product='.$pizza_id.'#pizzas');
 
             case 'dominos':
                 return redirect()->away('https://dominospizza.ru/category/picca');

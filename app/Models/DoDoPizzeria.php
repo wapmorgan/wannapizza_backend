@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Support\Facades\Log;
 use JsonException;
 
 class DoDoPizzeria extends Pizzeria
@@ -359,6 +360,7 @@ class DoDoPizzeria extends Pizzeria
         try {
             $data = json_decode(file_get_contents($file), false, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
+            Log::error($e->getMessage());
             return (object)[
                 'pizzas' => [],
             ];
@@ -366,6 +368,15 @@ class DoDoPizzeria extends Pizzeria
         return $data->menu;
     }
 
+    /**
+     * @param array $pizzas
+     * @param int $persons
+     * @param array|null $tastes
+     * @param array|null $meat
+     * @param bool|null $vegetarianOnly
+     * @param int|null $maxPrice
+     * @return array
+     */
     protected function findPizzas(
         array $pizzas,
         int $persons,
@@ -412,8 +423,8 @@ class DoDoPizzeria extends Pizzeria
                 $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
                 $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
 
-//                var_dump($vegetarianOnly, $pizza_tastes);
 
+//var_dump($pizza);
                 if (!$this->passesFilters(
                     $pizza_tastes, $pizza_meat,
                     $allowed_tastes ?? null, $disallowed_tastes ?? null,

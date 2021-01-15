@@ -17,4 +17,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('/selector/lists', [\App\Http\Controllers\SelectorController::class, 'lists']);
 Route::post('/selector/select', [\App\Http\Controllers\SelectorController::class, 'select']);
 Route::get('/selector/goTo', [\App\Http\Controllers\SelectorController::class, 'goTo']);
+Route::get('/geo/detect', [\App\Http\Controllers\GeoController::class, 'detect']);
 Route::get('/geo/select', [\App\Http\Controllers\GeoController::class, 'select']);
