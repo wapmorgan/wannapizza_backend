@@ -13,6 +13,11 @@ class Selector
     ];
 
     /**
+     * @var int Кол-во см2 пиццы для одного человека
+     */
+    public const NEEDED_ONE_IN_CM = 300;
+
+    /**
      * @param string $city
      * @param int $persons
      * @param array|null $tastes
@@ -30,19 +35,20 @@ class Selector
         ?int $maxPrice
     ): array
     {
-        $pizzas = [];
+        $products = [];
 
         foreach ($this->getPizzeriasByCity($city) as $pizzeriaClass) {
             /** @var Pizzeria $pizzeria_model */
             $pizzeria_model = new $pizzeriaClass();
             foreach ($pizzeria_model->select($city, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice) as $found_pizza) {
-                $pizzas[] = $found_pizza;
+                $products[] = $found_pizza;
             }
         }
 
-        $this->sortPizzas($pizzas);
+        $this->filterBySizeAndPrice($products, $persons, $maxPrice);
+        $this->sortProducts($products);
 
-        return $pizzas;
+        return $products;
     }
 
     /**
@@ -90,13 +96,37 @@ class Selector
         return array_reverse($cities);
     }
 
-    protected function sortPizzas(array &$pizzas)
+    /**
+     * @param Product[] $products
+     * @param int $persons
+     * @param int|null $maxPrice
+     * @return array
+     */
+    protected function filterBySizeAndPrice(array &$products, int $persons, ?int $maxPrice): void
     {
-        usort($pizzas, static function (array $a, array $b) {
-            if ($a['cmPrice'] != $b['cmPrice'])
-                return $a['cmPrice'] <=> $b['cmPrice'];
+        $size_minimum = Selector::NEEDED_ONE_IN_CM * $persons;
 
-            return $a['price'] <=> $b['price'];
+        $size_maximum = $size_minimum * 1.5;
+
+        foreach ($products as $i => $product) {
+            // Проверяем размер пиццы
+            if ($product->pizzaArea >= $size_minimum && $product->pizzaArea <= $size_maximum
+                && ($maxPrice === null || $product->price <= $maxPrice)) continue;
+
+            unset($products[$i]);
+        }
+    }
+
+    /**
+     * @param array $products
+     */
+    protected function sortProducts(array &$products)
+    {
+        usort($products, static function (Product $a, Product $b) {
+            if ($a->pizzaCmPrice != $b->pizzaCmPrice)
+                return $a->pizzaCmPrice <=> $b->pizzaCmPrice;
+
+            return $a->price <=> $b->price;
         });
     }
 }

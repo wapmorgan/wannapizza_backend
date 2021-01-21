@@ -16,6 +16,56 @@ abstract class Pizzeria
     );
 
     /**
+     * @param array $pizzas
+     * @param int $persons
+     * @param array|null $tastes
+     * @param array|null $meat
+     * @param bool|null $vegetarianOnly
+     * @param int|null $maxPrice
+     * @return array
+     */
+    protected function filterPizzasByTastes(
+        array $pizzas,
+        ?array $tastes,
+        ?array $meat,
+        ?bool $vegetarianOnly
+    )
+    {
+        $result = [];
+
+        if ($tastes !== null) {
+            $allowed_tastes = array_keys($tastes, true);
+            $disallowed_tastes = array_keys($tastes, false);
+        }
+
+        if ($meat !== null) {
+            $allowed_meat = array_keys($meat, true);
+            $disallowed_meat = array_keys($meat, false);
+        }
+
+        foreach ($pizzas as $pizza) {
+            if (!$this->passesFilters(
+                $pizza->tastes, $pizza->meat,
+                $allowed_tastes ?? null, $disallowed_tastes ?? null,
+                $allowed_meat ?? null, $disallowed_meat ?? null,
+                $vegetarianOnly))
+                continue;
+
+            $result[] = $pizza;
+        }
+
+        return $result;
+    }
+
+    protected function filterDough(array &$pizzas, array $doughs): void
+    {
+        foreach ($pizzas as $i => $pizza) {
+            if (!in_array($pizza->dough, $doughs))
+                unset($pizzas[$i]);
+        }
+    }
+
+    /**
      * @param array $pizzaTastes
      * @param array $pizzaMeat
      * @param array|null $allowedTastes

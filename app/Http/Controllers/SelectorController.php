@@ -25,7 +25,6 @@ class SelectorController extends Controller
      */
     public function select(\App\Http\Requests\SelectPizzas $request) {
         $validated = $request->validated();
-//        return $validated;
 
         $selector = new Selector();
         $pizzas = $selector->select(
@@ -41,12 +40,16 @@ class SelectorController extends Controller
         $pizza_id = $request->query->get('pizzaId');
         $city = $request->query->get('city');
 
+        $type = $request->query->get('type');
+
         switch ($request->query->get('pizzeria')) {
             case 'dodo':
-                return redirect()->away('https://dodopizza.ru/'.$city.'?product='.$pizza_id.'#pizzas');
+                return redirect()->away('https://dodopizza.ru/'.$city.'?product='.$pizza_id.'#'.($type === 'combo' ? 'combos' : 'pizzas'));
 
             case 'dominos':
-                return redirect()->away('https://dominospizza.ru/category/picca');
+                return redirect()->away($type === 'combo'
+                    ? 'https://dominospizza.ru/product/'.$pizza_id
+                    : 'https://dominospizza.ru/category/picca');
         }
     }
 }

@@ -15,19 +15,6 @@ class DoDoPizzeria extends Pizzeria
         3 => 35,
     ];
 
-    public static array $matchingSizesByPersons = [
-        1 => [1],
-        2 => [2],
-        3 => [3],
-        4 => [3],
-        5 => [3],
-        6 => [3],
-        7 => [3],
-        8 => [3],
-        9 => [3],
-        10 => [3],
-    ];
-
     public static array $cities = [
         'moscow' => 'Москва',
         'peterburg' => 'Санкт-Петербург',
@@ -331,6 +318,10 @@ class DoDoPizzeria extends Pizzeria
         'shelkovo' => 'schelkovo',
     ];
 
+    public static array $doughTypes = [
+        2 => Pizza::DOUGH_THIN,
+        1 => Pizza::DOUGH_NORMAL,
+    ];
     protected const STANDARD_DOUGH = 1;
 
     /**
@@ -347,10 +338,13 @@ class DoDoPizzeria extends Pizzeria
         $original_city = $this->getOriginalCity($city);
         $menu = $this->getMenu($original_city);
 
-        $pizzas = $this->findPizzas($menu->pizzas, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
-        $combos = $this->findCombos($menu->combos, $pizzas, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
-//        var_dump($combos);
-        return $pizzas;
+        $pizzas = $this->filterPizzasByTastes($this->convertAllPizzas($menu->pizzas), $tastes, $meat, $vegetarianOnly);
+
+        $combos = $this->findCombos($menu->combos, $pizzas);
+
+        $this->filterDough($pizzas, [Pizza::DOUGH_NORMAL]);
+
+        return array_merge($pizzas, $combos);
     }
 
     /**
@@ -381,49 +375,18 @@ class DoDoPizzeria extends Pizzeria
 
     /**
      * @param array $pizzas
-     * @param int $persons
-     * @param array|null $tastes
-     * @param array|null $meat
-     * @param bool|null $vegetarianOnly
-     * @param int|null $maxPrice
      * @return array
      */
-    protected function findPizzas(
-        array $pizzas,
-        int $persons,
-        ?array $tastes,
-        ?array $meat,
-        ?bool $vegetarianOnly,
-        ?int $maxPrice
-    )
+    protected function convertAllPizzas(array $pizzas): array
     {
         $result = [];
-
-        $matched_sizes = self::$matchingSizesByPersons[$persons];
-
-        if ($tastes !== null) {
-            $allowed_tastes = array_keys($tastes, true);
-            $disallowed_tastes = array_keys($tastes, false);
-        }
-
-        if ($meat !== null) {
-            $allowed_meat = array_keys($meat, true);
-            $disallowed_meat = array_keys($meat, false);
-        }
-
         foreach ($pizzas as $pizza) {
             // Проверяем все размеры пиццы
             foreach ($pizza->products as $pizza_product) {
-                // Не берём на тонком тесте
-                if ($pizza_product->dough != self::STANDARD_DOUGH) continue;
-
-                // Проверяем размер пиццы
-                if (!in_array($pizza_product->sizeGroup, $matched_sizes)) continue;
+//                // Не берём на тонком тесте
+//                if ($pizza_product->dough != self::STANDARD_DOUGH) continue;
 
                 $pizza_price = $pizza_product->menuProduct->price->value;
-
-                if ($maxPrice !== null && $pizza_price > $maxPrice)
-                    continue;
 
                 $pizza_ingredients = array_map(static function ($ingredient) {return mb_strtolower($ingredient->name);},
                     $pizza_product->menuProduct->product->ingredients);
@@ -433,12 +396,6 @@ class DoDoPizzeria extends Pizzeria
                 // Проверяем состав пиццы
                 $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
                 $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
-                if (!$this->passesFilters(
-                    $pizza_tastes, $pizza_meat,
-                    $allowed_tastes ?? null, $disallowed_tastes ?? null,
-                    $allowed_meat ?? null, $disallowed_meat ?? null,
-                    $vegetarianOnly))
-                    continue;
 
                 // Подборка картинки с размером примерно 300x300
                 foreach ($pizza_product->menuProduct->product->productImages as $productImage) {
@@ -452,9 +409,10 @@ class DoDoPizzeria extends Pizzeria
                     $product_image = last($pizza_product->menuProduct->product->productImages);
 
                 $pizza_diameter = self::$sizesInCm[$pizza_product->sizeGroup];
+                $pizza_area = M_PI * ($pizza_diameter / 2)**2;
 
-                $result[] = [
-                    'pizzeria' => 'dodo',
+                $result[] = new Pizza([
+                    'pizzeria' => self::PIZZERIA,
                     'id' => $pizza->uuId,
                     'sizeId' => $pizza_product->menuProduct->product->uuId,
                     'name' => $pizza->name,
@@ -462,40 +420,92 @@ class DoDoPizzeria extends Pizzeria
                     'tastes' => $pizza_tastes,
                     'meat' => $pizza_meat,
                     'price' => $pizza_price,
-                    'cmPrice' => $pizza_price / (M_PI * ($pizza_diameter / 2)^2),
+                    'pizzaArea' => $pizza_area,
+                    'pizzaCmPrice' => $pizza_price / $pizza_area,
                     'thumbnail' => $product_image->url,
                     'ingredients' => $pizza_ingredients,
-                ];
+                ]);
 
                 unset($product_image);
             }
         }
-
         return $result;
     }
 
+    /**
+     * @param array $combos
+     * @param array $allPizzas
+     * @param int $persons
+     * @param array|null $tastes
+     * @param array|null $meat
+     * @param bool|null $vegetarianOnly
+     * @param int|null $maxPrice
+     */
     protected function findCombos(
         array $combos,
-        array $pizzas,
-        int $persons,
-        ?array $tastes,
-        ?array $meat,
-        ?bool $vegetarianOnly,
-        ?int $maxPrice)
+        array $allPizzas)
     {
         $result = [];
-        $needed_for_1_person = 300;
+
+        $matching_pizzas = [];
 
         // подготовим данные по пиццам
-        foreach ($pizzas as $i => $pizza) {
-            unset($pizzas[$i]);
-            $pizzas[$pizza['sizeId']] = $pizza;
+        foreach ($allPizzas as $i => $pizza) {
+            unset($allPizzas[$i]);
+            $allPizzas[$pizza->sizeId] = $pizza;
+            $matching_pizzas[] = $pizza->sizeId;
         }
 
         // Проверяем совпадение комб
         foreach ($combos as $combo) {
+            $combo_slots_count = count($combo->slots);
+            $combo_total_pizza_area = 0;
 
+            $combo_pizzas = [];
+            foreach ($combo->slots as $slot_index => $slot) {
+                $slot_matched = 0;
+
+                foreach ($slot->products as $slot_product) {
+                    if (isset($allPizzas[$slot_product->id])) {
+                        if ($slot_matched++ === 0) {
+                            $combo_total_pizza_area += $allPizzas[$slot_product->id]->pizzaArea;
+                        }
+                        $combo_pizzas[$slot_index][] = $allPizzas[$slot_product->id];
+                        break;
+                    }
+                }
+
+                // Не убираем пока комбы с чем-то кроме пиццы
+//                if ($slot_matched === 0)
+//                    continue(2);
+            }
+
+            if ($combo_total_pizza_area === 0)
+                continue;
+
+            // Подборка картинки с размером примерно 300x300
+            foreach ($combo->comboImages as $comboImage) {
+                if ($comboImage->size == 4) {
+                    $combo_image = $comboImage;
+                    break;
+                }
+            }
+            // Если не найдена, берём последнюю
+            if (!isset($combo_image))
+                $combo_image = last($combo->comboImages);
+
+            $result[] = new Combo([
+                'pizzeria' => self::PIZZERIA,
+                'id' => $combo->id,
+                'name' => $combo->name,
+                'price' => $combo->price->value,
+                'pizzaArea' => $combo_total_pizza_area,
+                'pizzaCmPrice' => $combo->price->value / $combo_total_pizza_area,
+                'slots' => $combo_pizzas,
+                'thumbnail' => $combo_image->url,
+            ]);
         }
-//        print_r($pizzas);exit;
+//        print_r($result);exit;
+        return $result;
     }
 }

@@ -13,6 +13,7 @@ RUN crontab /etc/cron.d/crawl-pizzerias
 
 COPY crawl-dodo.php /var/crawler/
 COPY crawl-dominos.php /var/crawler/
+COPY crawl-papajohns.php /var/crawler/
 
 WORKDIR /var/crawler
 

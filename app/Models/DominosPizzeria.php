@@ -1,6 +1,8 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Support\Facades\Log;
+
 class DominosPizzeria extends Pizzeria
 {
     public const PIZZERIA = 'dominos';
@@ -11,17 +13,10 @@ class DominosPizzeria extends Pizzeria
         14 => 33,
     ];
 
-    public static array $matchingSizesByPersons = [
-        1 => [9],
-        2 => [12],
-        3 => [14],
-        4 => [14],
-        5 => [14],
-        6 => [14],
-        7 => [14],
-        8 => [14],
-        9 => [14],
-        10 => [14],
+    public static array $doughValues = [
+        'ULTRA' => Pizza::DOUGH_ULTRA,
+        'THIN' => Pizza::DOUGH_THIN,
+        'CLASSIC' => Pizza::DOUGH_NORMAL,
     ];
 
     public static array $cities = [
@@ -109,19 +104,23 @@ class DominosPizzeria extends Pizzeria
     {
 
         $original_city = $this->getOriginalCity($city);
-        $menu = $this->getMenu($original_city);
+        $pizzas_menu = $this->getPizzasMenu($original_city);
+        $combos_menu = $this->getCombosMenu($original_city);
 
-        $pizzas = $this->findPizzas($menu, $persons, $tastes, $meat, $vegetarianOnly, $maxPrice);
-//        $combos = $this->findCombos($menu, $persons, $tastes, $meat);
+        $all_pizzas = $this->convertPizzas($pizzas_menu);
+        $pizzas = $this->filterPizzasByTastes($all_pizzas, $tastes, $meat, $vegetarianOnly);
+        $combos = $this->findCombos($combos_menu, $pizzas);
 
-        return $pizzas;
+        $this->filterDough($pizzas, [Pizza::DOUGH_NORMAL]);
+
+        return array_merge($pizzas, $combos);
     }
 
     /**
      * @param string $city
      * @return mixed
      */
-    protected function getMenu(string $city)
+    protected function getPizzasMenu(string $city)
     {
         $file = __DIR__.'/../../storage/app/dominos.'.$city.'.json';
         if (!file_exists($file)) {
@@ -132,27 +131,35 @@ class DominosPizzeria extends Pizzeria
         return $data->pizza->list;
     }
 
-    protected function findPizzas(
-        $menu,
-        int $persons,
-        ?array $tastes,
-        ?array $meat,
-        ?bool $vegetarianOnly,
-        ?int $maxPrice
-    )
+    /**
+     * @param string $city
+     * @return mixed
+     */
+    protected function getCombosMenu(string $city)
+    {
+        $file = __DIR__.'/../../storage/app/dominos.'.$city.'.combo.json';
+        if (!file_exists($file)) {
+            return [];
+        }
+
+        try {
+            $data = json_decode(file_get_contents($file), false, 512,);
+            return $data->catalog->coupons->coupons;
+        } catch (\JsonException $e) {
+            Log::error($e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * @param $menu
+     * @return array
+     */
+    protected function convertPizzas(
+        $menu
+    ): array
     {
         $pizzas = [];
-        $matched_sizes = self::$matchingSizesByPersons[$persons];
-
-        if ($tastes !== null) {
-            $allowed_tastes = array_keys($tastes, true);
-            $disallowed_tastes = array_keys($tastes, false);
-        }
-
-        if ($meat !== null) {
-            $allowed_meat = array_keys($meat, true);
-            $disallowed_meat = array_keys($meat, false);
-        }
 
         foreach ($menu as $pizza)
         {
@@ -162,54 +169,109 @@ class DominosPizzeria extends Pizzeria
             $pizza_ingredients = array_map(static function ($ingredient) {return mb_strtolower($ingredient->description);}, $pizza->productOsgOptions);
             $pizza_ingredient_words = explode(' ', implode(' ', $pizza_ingredients));
 
-            // Проверяем состав пиццы
             $pizza_tastes = Menu::getTastesByIngredients($pizza_ingredient_words);
             $pizza_meat = Menu::getMeatByIngredients($pizza_ingredient_words);
 
-            if (!$this->passesFilters(
-                $pizza_tastes, $pizza_meat,
-                $allowed_tastes ?? null, $disallowed_tastes ?? null,
-                $allowed_meat ?? null, $disallowed_meat ?? null,
-                $vegetarianOnly))
-                continue;
-
+            // Размер пиццы
             foreach ($pizza->sizes as $pizza_size)
             {
-                // Проверяем размер пиццы
-                if (!in_array($pizza_size->sizeCode, $matched_sizes)) continue;
+                $pizza_diameter = self::$sizesInCm[$pizza_size->sizeCode];
+                $pizza_area = M_PI * ($pizza_diameter / 2) ** 2;
 
+                // Толщина теста
                 foreach ($pizza_size->doughs as $pizza_size_dough)
                 {
-                    // Проверка теста
-                    if ($pizza_size_dough->doughCode != self::STANDARD_DOUGH) continue;
+//                    // Проверка теста
+//                    if ($pizza_size_dough->doughCode != self::STANDARD_DOUGH) continue;
 
-                    $first_side = current($pizza_size_dough->sides);
+                    // Тип борта
+                    foreach ($pizza_size_dough->sides as $pizza_size_dough_side) {
+                        $pizza_price = $pizza_size_dough_side->productPrice;
 
-                    $pizza_price = $first_side->productPrice;
-
-                    if ($maxPrice !== null && $pizza_price > $maxPrice)
-                        continue;
-
-                    $pizza_diameter = self::$sizesInCm[$pizza_size->sizeCode];
-
-                    $pizzas[] = [
-                        'pizzeria' => self::PIZZERIA,
-                        'id' => $pizza->id,
-                        'name' => $pizza->description,
-                        'size' => $pizza_diameter,
-                        'tastes' => $pizza_tastes,
-                        'meat' => $pizza_meat,
-                        'price' => $pizza_price,
-                        'cmPrice' => $pizza_price / (M_PI * ($pizza_diameter / 2)^2),
-                        // На удивление, у них динамическая ссылка опреедляет создаваемое изображение. Можно поставить свои размеры
-                        'thumbnail' => 'https://dpr-cdn.azureedge.net/api/medium/ProductOsg/Global/'.$pizza->productOsgCode.'/NULL/300x300/RU',
-                        'ingredients' => $pizza_ingredients,
-                    ];
-
+                        $pizzas[] = new Pizza([
+                            'pizzeria' => self::PIZZERIA,
+                            'id' => $pizza->id,
+                            'sizeId' => $pizza_size_dough_side->productCode,
+                            'dough' => self::$doughValues[$pizza_size_dough->doughCode],
+                            'name' => $pizza->description,
+                            'size' => $pizza_diameter,
+                            'tastes' => $pizza_tastes,
+                            'meat' => $pizza_meat,
+                            'price' => $pizza_price,
+                            'pizzaArea' => $pizza_area,
+                            'pizzaCmPrice' => $pizza_price / $pizza_area,
+                            // На удивление, у них динамическая ссылка опреедляет создаваемое изображение. Можно поставить свои размеры
+                            'thumbnail' => 'https://dpr-cdn.azureedge.net/api/medium/ProductOsg/Global/' . $pizza->productOsgCode . '/NULL/300x300/RU',
+                            'ingredients' => $pizza_ingredients,
+                        ]);
+                    }
                 }
             }
         }
 
         return $pizzas;
+    }
+
+    /**
+     * @param array $combos
+     * @param Pizza[] $pizzas
+     */
+    protected function findCombos(array $combos, array $allPizzas)
+    {
+        $result = [];
+
+        $matching_pizzas = [];
+
+        // подготовим данные по пиццам
+        foreach ($allPizzas as $i => $pizza) {
+            unset($allPizzas[$i]);
+            $allPizzas[$pizza->sizeId] = $pizza;
+            $matching_pizzas[] = $pizza->sizeId;
+        }
+
+        // Проверяем совпадение комб
+        foreach ($combos as $combo) {
+            $combo_total_pizza_area = 0;
+            $combo_total_price = 0;
+
+            $combo_pizzas = [];
+            foreach ($combo->couponProductGroups as $group_index => $group) {
+                $group_matched = 0;
+                $combo_total_price += $group->discountValue;
+
+                foreach ($group->products as $group_product) {
+                    if (isset($allPizzas[$group_product])) {
+                        if ($group_matched++ === 0) {
+                            $combo_total_pizza_area += $allPizzas[$group_product]->pizzaArea;
+                        }
+                        $combo_pizzas[$group_index][] = $allPizzas[$group_product];
+                        continue;
+                    }
+                }
+
+                // Не убираем пока комбы с чем-то кроме пиццы
+//                if ($group_matched === 0)
+//                    continue(2);
+            }
+
+            if ($combo_total_pizza_area === 0)
+                continue;
+
+            if ($combo_total_price === 0)
+                continue;
+
+            $result[] = new Combo([
+                'pizzeria' => self::PIZZERIA,
+                'id' => $combo->couponUrl,
+                'name' => $combo->description,
+                'price' => $combo_total_price,
+                'pizzaArea' => $combo_total_pizza_area,
+                'pizzaCmPrice' => $combo_total_price / $combo_total_pizza_area,
+                'slots' => $combo_pizzas,
+                'thumbnail' => 'https://dpr-cdn.azureedge.net/api/medium/Coupon/Global/'.$combo->id.'/NULL/270x270/RU',
+            ]);
+        }
+//        echo json_encode($result);exit;
+        return $result;
     }
 }
