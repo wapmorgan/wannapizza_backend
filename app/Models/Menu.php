@@ -10,6 +10,18 @@ class Menu
     public const MUSHROOM_TASTE = 'mushroom';
     public const EXOTIC_TASTE = 'exotic';
 
+    public static array $personsList = [
+        '1' => [1, 2],
+        '2' => [2, 3],
+        '3' => [3, 4],
+        '4' => [4, 5],
+        '5' => [5, 6],
+        '6-8' => [6, 8],
+        '8-10' => [8, 10],
+        '10-15' => [10, 15],
+        '>15' => [15, 100],
+    ];
+
     public const CHICKEN_MEAT = 'chicken';
     public const PORK_MEAT = 'pork';
     public const BEEF_MEAT = 'beef';

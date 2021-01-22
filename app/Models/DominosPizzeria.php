@@ -95,7 +95,7 @@ class DominosPizzeria extends Pizzeria
      */
     public function select(
         string $city,
-        int $persons,
+        string $persons,
         ?array $tastes,
         ?array $meat,
         ?bool $vegetarianOnly,
@@ -264,6 +264,7 @@ class DominosPizzeria extends Pizzeria
                 'pizzeria' => self::PIZZERIA,
                 'id' => $combo->couponUrl,
                 'name' => $combo->description,
+                'description' => $combo->explanation,
                 'price' => $combo_total_price,
                 'pizzaArea' => $combo_total_pizza_area,
                 'pizzaCmPrice' => $combo_total_price / $combo_total_pizza_area,

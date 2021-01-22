@@ -8,7 +8,7 @@ abstract class Pizzeria
 
     abstract public function select(
         string $city,
-        int $persons,
+        string $persons,
         ?array $tastes,
         ?array $meat,
         ?bool $vegetarianOnly,

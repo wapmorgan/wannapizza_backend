@@ -15,7 +15,7 @@ class Selector
     /**
      * @var int Кол-во см2 пиццы для одного человека
      */
-    public const NEEDED_ONE_IN_CM = 300;
+    public const NEEDED_ONE_IN_CM = 350;
 
     /**
      * @param string $city
@@ -28,7 +28,7 @@ class Selector
      */
     public function select(
         string $city,
-        int $persons,
+        string $persons,
         ?array $tastes,
         ?array $meat,
         ?bool $vegetarianOnly,
@@ -102,11 +102,11 @@ class Selector
      * @param int|null $maxPrice
      * @return array
      */
-    protected function filterBySizeAndPrice(array &$products, int $persons, ?int $maxPrice): void
+    protected function filterBySizeAndPrice(array &$products, string $persons, ?int $maxPrice): void
     {
-        $size_minimum = Selector::NEEDED_ONE_IN_CM * $persons;
-
-        $size_maximum = $size_minimum * 1.5;
+        $size = Menu::$personsList[$persons];
+        $size_minimum = Selector::NEEDED_ONE_IN_CM * $size[0];
+        $size_maximum = Selector::NEEDED_ONE_IN_CM * $size[1];
 
         foreach ($products as $i => $product) {
             // Проверяем размер пиццы

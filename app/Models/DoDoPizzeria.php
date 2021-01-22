@@ -333,7 +333,7 @@ class DoDoPizzeria extends Pizzeria
      * @param int|null $maxPrice
      * @return array
      */
-    public function select(string $city, int $persons, ?array $tastes, ?array $meat, ?bool $vegetarianOnly, ?int $maxPrice)
+    public function select(string $city, string $persons, ?array $tastes, ?array $meat, ?bool $vegetarianOnly, ?int $maxPrice)
     {
         $original_city = $this->getOriginalCity($city);
         $menu = $this->getMenu($original_city);
@@ -424,6 +424,7 @@ class DoDoPizzeria extends Pizzeria
                     'pizzaCmPrice' => $pizza_price / $pizza_area,
                     'thumbnail' => $product_image->url,
                     'ingredients' => $pizza_ingredients,
+                    'dough' => self::$doughTypes[$pizza_product->dough],
                 ]);
 
                 unset($product_image);
@@ -498,6 +499,7 @@ class DoDoPizzeria extends Pizzeria
                 'pizzeria' => self::PIZZERIA,
                 'id' => $combo->id,
                 'name' => $combo->name,
+                'description' => $combo->description,
                 'price' => $combo->price->value,
                 'pizzaArea' => $combo_total_pizza_area,
                 'pizzaCmPrice' => $combo->price->value / $combo_total_pizza_area,

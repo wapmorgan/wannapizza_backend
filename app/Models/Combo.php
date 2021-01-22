@@ -5,4 +5,5 @@ class Combo extends Product
 {
     public $type = 'combo';
     public $slots;
+    public $description;
 }

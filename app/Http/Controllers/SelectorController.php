@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Menu;
 use App\Models\Selector;
 use Illuminate\Http\Request;
 
@@ -12,10 +13,11 @@ class SelectorController extends Controller
      */
     public function lists(Request $request) {
         return [
-            'persons' => range(1, 10),
-            'tastes' => \App\Models\Menu::$tastes,
-            'meat' => \App\Models\Menu::$meat,
-            'pizzas' => \App\Models\Menu::$pizzas,
+//            'persons' => range(1, 15),
+            'persons' => array_keys(Menu::$personsList),
+            'tastes' => Menu::$tastes,
+            'meat' => Menu::$meat,
+            'pizzas' => Menu::$pizzas,
         ];
     }
 
