@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 class SelectorController extends Controller
 {
     /**
+     * Возвращает список фильтров
      * @param Request $request
      * @return array
      */
@@ -22,6 +23,7 @@ class SelectorController extends Controller
     }
 
     /**
+     * Производит подбор пицц по критериям
      * @param \App\Http\Requests\SelectPizzas $request
      * @return int[]
      */
